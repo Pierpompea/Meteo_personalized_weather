@@ -1,12 +1,14 @@
-const CACHE_NAME = "meteo-su-misura-v2";
+const CACHE_NAME = "meteo-su-misura-v4";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
   "./manifest.json",
+  "./icons/icon-180.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
+  "./icons/logo.svg",
 ];
 
 self.addEventListener("install", (event) => {

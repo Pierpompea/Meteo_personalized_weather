@@ -28,7 +28,7 @@ const WEATHER_CODES = {
 
 const state = {
   weather: null,
-  coords: DEFAULT_COORDS,
+  coords: loadSavedCoords(),
   profile: loadProfile(),
 };
 
@@ -48,6 +48,7 @@ const els = {
   geoBtn: document.querySelector("#geoBtn"),
   refreshBtn: document.querySelector("#refreshBtn"),
   feedbackForm: document.querySelector("#feedbackForm"),
+  feedbackToast: document.querySelector("#feedbackToast"),
   learningNote: document.querySelector("#learningNote"),
   biasMeter: document.querySelector("#biasMeter"),
   profileText: document.querySelector("#profileText"),
@@ -74,8 +75,126 @@ function saveProfile() {
   localStorage.setItem("personalWeatherProfile", JSON.stringify(state.profile));
 }
 
+function loadSavedCoords() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("personalWeatherLastCoords"));
+    if (Number.isFinite(saved?.latitude) && Number.isFinite(saved?.longitude)) {
+      return {
+        latitude: saved.latitude,
+        longitude: saved.longitude,
+        name: saved.name || "Ultima posizione salvata",
+        accuracy: saved.accuracy,
+        savedAt: saved.savedAt,
+      };
+    }
+  } catch {
+    return DEFAULT_COORDS;
+  }
+
+  return DEFAULT_COORDS;
+}
+
+function saveCoords(coords) {
+  localStorage.setItem(
+    "personalWeatherLastCoords",
+    JSON.stringify({
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+      name: coords.name,
+      accuracy: coords.accuracy,
+      savedAt: new Date().toISOString(),
+    }),
+  );
+}
+
 function rounded(value) {
   return Math.round(value * 10) / 10;
+}
+
+function uniqueParts(parts) {
+  return [...new Set(parts.filter(Boolean).map((part) => part.trim()).filter(Boolean))];
+}
+
+function formatNominatimLocation(data, fallbackName) {
+  const address = data.address || {};
+  const city = address.city || address.town || address.village || address.municipality || address.county;
+  const zone =
+    address.neighbourhood ||
+    address.suburb ||
+    address.quarter ||
+    address.city_district ||
+    address.borough ||
+    address.hamlet;
+  const specific = address.pedestrian || address.road || address.square || address.place;
+  const parts = uniqueParts([city, zone, specific]);
+
+  return parts.length > 0 ? parts.join(" · ") : fallbackName;
+}
+
+function formatBigDataCloudLocation(data, fallbackName) {
+  const localityInfo = data.localityInfo || {};
+  const localities = Array.isArray(localityInfo.informative) ? localityInfo.informative : [];
+  const zone = localities.find((item) => ["neighbourhood", "suburb", "quarter"].includes(item.description))?.name;
+  const city = data.city || data.locality || data.principalSubdivision;
+  const parts = uniqueParts([city, zone]);
+
+  return parts.length > 0 ? parts.join(" · ") : fallbackName;
+}
+
+function formatAccuracy(accuracy) {
+  if (!Number.isFinite(accuracy)) return "";
+  if (accuracy >= 1000) return `precisione circa ${rounded(accuracy / 1000)} km`;
+  return `precisione circa ${Math.round(accuracy)} m`;
+}
+
+async function enrichLocationName(coords, { save = false } = {}) {
+  if (!navigator.onLine) return;
+
+  try {
+    const params = new URLSearchParams({
+      format: "jsonv2",
+      lat: coords.latitude,
+      lon: coords.longitude,
+      zoom: "18",
+      addressdetails: "1",
+      "accept-language": "it",
+    });
+    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?${params}`);
+    if (!response.ok) return;
+
+    const data = await response.json();
+    const accuracy = formatAccuracy(coords.accuracy);
+    state.coords = {
+      ...state.coords,
+      name: [formatNominatimLocation(data, coords.name), accuracy].filter(Boolean).join(" · "),
+    };
+    els.locationName.textContent = state.coords.name;
+    if (save) saveCoords(state.coords);
+    return;
+  } catch {
+    // Try a lighter fallback below.
+  }
+
+  try {
+    const params = new URLSearchParams({
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+      localityLanguage: "it",
+    });
+    const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?${params}`);
+    if (!response.ok) return;
+
+    const data = await response.json();
+    const accuracy = formatAccuracy(coords.accuracy);
+    state.coords = {
+      ...state.coords,
+      name: [formatBigDataCloudLocation(data, coords.name), accuracy].filter(Boolean).join(" · "),
+    };
+    els.locationName.textContent = state.coords.name;
+    if (save) saveCoords(state.coords);
+  } catch {
+    // If reverse geocoding is unavailable, coordinates still drive the weather.
+  }
 }
 
 function getSelectedClothing() {
@@ -172,6 +291,18 @@ function renderOutfitRecommendation() {
   });
 }
 
+function getComfortMeta(comfort) {
+  const comfortMap = {
+    veryCold: { label: "molto freddo", step: 1, toast: "Ok, messaggio ricevuto: la prossima volta ti copro un po' di piu." },
+    cold: { label: "freddo", step: 0.6, toast: "Me lo segno: per te oggi serviva uno strato in piu." },
+    ok: { label: "perfetto", step: state.profile.bias * -0.12, toast: "Perfetto, questo outfit era centrato. Lo tengo come riferimento." },
+    hot: { label: "caldo", step: -0.6, toast: "Capito: la prossima volta ti alleggerisco un po' il consiglio." },
+    veryHot: { label: "molto caldo", step: -1, toast: "Ricevuto forte e chiaro: oggi eri troppo coperto." },
+  };
+
+  return comfortMap[comfort] || comfortMap.ok;
+}
+
 function renderWeather() {
   if (!state.weather) return;
 
@@ -259,8 +390,11 @@ function updateCoordsFromPosition(position) {
   state.coords = {
     latitude: position.coords.latitude,
     longitude: position.coords.longitude,
-    name: "La tua posizione",
+    accuracy: position.coords.accuracy,
+    name: ["La tua posizione", formatAccuracy(position.coords.accuracy)].filter(Boolean).join(" · "),
   };
+  saveCoords(state.coords);
+  enrichLocationName(state.coords, { save: true });
   fetchWeather().catch(showWeatherError);
 }
 
@@ -279,20 +413,23 @@ function handleFeedback(event) {
   const formData = new FormData(els.feedbackForm);
   const comfort = formData.get("comfort");
   const clothes = getSelectedClothing();
-  const learningStep = comfort === "cold" ? 0.6 : comfort === "hot" ? -0.6 : state.profile.bias * -0.12;
+  const comfortMeta = getComfortMeta(comfort);
+  const learningStep = comfortMeta.step;
 
   state.profile.bias = rounded(Math.max(-4, Math.min(4, state.profile.bias + learningStep)));
   state.profile.feedbackCount += 1;
   state.profile.history.unshift({
     actual: rounded(state.weather.temperature),
     personal: calculatePersonalTemp(),
-    comfortLabel: comfort === "cold" ? "freddo" : comfort === "hot" ? "caldo" : "bene",
+    comfortLabel: comfortMeta.label,
     clothes: clothes.map((item) => item.label).join(", "),
     date: new Date().toISOString(),
   });
   state.profile.history = state.profile.history.slice(0, 12);
   saveProfile();
   renderWeather();
+  els.feedbackToast.textContent = comfortMeta.toast;
+  els.feedbackToast.classList.add("is-visible");
 }
 
 function requestGeolocation() {
@@ -322,7 +459,7 @@ els.resetBtn.addEventListener("click", () => {
 });
 
 renderProfile();
-fetchWeather(DEFAULT_COORDS).catch(showWeatherError);
+fetchWeather(state.coords).then(() => enrichLocationName(state.coords, { save: state.coords !== DEFAULT_COORDS })).catch(showWeatherError);
 
 const wardrobeObserver = new IntersectionObserver(
   ([entry]) => {

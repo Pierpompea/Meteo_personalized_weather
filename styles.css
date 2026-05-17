@@ -505,7 +505,7 @@ legend {
 .clothing-grid,
 .comfort-options {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .clothing-grid {
@@ -513,16 +513,55 @@ legend {
 }
 
 label {
-  min-height: 46px;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 10px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.68);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.56);
   cursor: pointer;
-  font-weight: 750;
+}
+
+.option-tile {
+  min-height: 82px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.78), transparent 36%),
+    rgba(255, 255, 255, 0.54);
+  font-weight: 850;
+  box-shadow: 0 14px 35px rgba(42, 89, 121, 0.08);
+  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.option-tile:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.option-tile input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.option-tile:has(input:checked) {
+  border-color: rgba(37, 111, 232, 0.72);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.86), transparent 36%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.82), rgba(207, 229, 255, 0.78));
+  box-shadow: 0 16px 38px rgba(37, 111, 232, 0.18);
+}
+
+.option-emoji {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.68);
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+  font-size: 1.35rem;
+  flex: 0 0 auto;
 }
 
 input[type="checkbox"],
@@ -531,7 +570,35 @@ input[type="radio"] {
 }
 
 .comfort-options {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.comfort-tile {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  text-align: center;
+  min-height: 104px;
+}
+
+.comfort-tile .option-emoji {
+  width: 52px;
+  height: 52px;
+  font-size: 1.5rem;
+}
+
+.feedback-toast {
+  display: none;
+  margin: 14px 0 0;
+  padding: 13px 14px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.66);
+  color: var(--ink);
+  font-weight: 850;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72);
+}
+
+.feedback-toast.is-visible {
+  display: block;
 }
 
 .note {
@@ -604,9 +671,12 @@ input[type="radio"] {
   .temperature-grid,
   .outfit-card,
   .details,
-  .clothing-grid,
   .comfort-options {
     grid-template-columns: 1fr;
+  }
+
+  .clothing-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .weather-panel,

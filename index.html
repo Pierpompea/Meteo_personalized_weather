@@ -10,7 +10,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Me!teo</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <link rel="icon" href="icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="icons/icon-180.png" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body class="weather-sunny">
@@ -84,25 +85,33 @@
           <fieldset>
             <legend>Guardaroba: com'eri vestito?</legend>
             <div class="clothing-grid" id="clothingChoices">
-              <label><input type="checkbox" name="clothing" value="tshirt" data-weight="-1.5" /> T-shirt</label>
-              <label><input type="checkbox" name="clothing" value="sweater" data-weight="1.5" /> Maglione</label>
-              <label><input type="checkbox" name="clothing" value="jacket" data-weight="3" /> Giacca</label>
-              <label><input type="checkbox" name="clothing" value="coat" data-weight="5" /> Cappotto</label>
-              <label><input type="checkbox" name="clothing" value="scarf" data-weight="1" /> Sciarpa</label>
-              <label><input type="checkbox" name="clothing" value="shorts" data-weight="-2" /> Pantaloncini</label>
+              <label class="option-tile"><input type="checkbox" name="clothing" value="tshirt" data-weight="-1.5" /><span class="option-emoji">☀️</span><span>T-shirt</span></label>
+              <label class="option-tile"><input type="checkbox" name="clothing" value="top" data-weight="-2" /><span class="option-emoji">🌤️</span><span>Top</span></label>
+              <label class="option-tile"><input type="checkbox" name="clothing" value="polo" data-weight="-1" /><span class="option-emoji">👕</span><span>Polo</span></label>
+              <label class="option-tile"><input type="checkbox" name="clothing" value="shirt" data-weight="0" /><span class="option-emoji">👔</span><span>Camicia</span></label>
+              <label class="option-tile"><input type="checkbox" name="clothing" value="hoodie" data-weight="1.8" /><span class="option-emoji">🧥</span><span>Felpa</span></label>
+              <label class="option-tile"><input type="checkbox" name="clothing" value="sweater" data-weight="1.5" /><span class="option-emoji">🧶</span><span>Maglione</span></label>
+              <label class="option-tile"><input type="checkbox" name="clothing" value="jeans" data-weight="1" /><span class="option-emoji">👖</span><span>Jeans lunghi</span></label>
+              <label class="option-tile"><input type="checkbox" name="clothing" value="jacket" data-weight="3" /><span class="option-emoji">🧥</span><span>Giacca</span></label>
+              <label class="option-tile"><input type="checkbox" name="clothing" value="coat" data-weight="5" /><span class="option-emoji">🧣</span><span>Cappotto</span></label>
+              <label class="option-tile"><input type="checkbox" name="clothing" value="scarf" data-weight="1" /><span class="option-emoji">🧣</span><span>Sciarpa</span></label>
+              <label class="option-tile"><input type="checkbox" name="clothing" value="shorts" data-weight="-2" /><span class="option-emoji">🩳</span><span>Pantaloncini</span></label>
             </div>
           </fieldset>
 
           <fieldset>
             <legend>E com'è andata?</legend>
             <div class="comfort-options">
-              <label><input type="radio" name="comfort" value="cold" required /> Ho avuto freddo</label>
-              <label><input type="radio" name="comfort" value="ok" /> Stavo bene</label>
-              <label><input type="radio" name="comfort" value="hot" /> Ho avuto caldo</label>
+              <label class="option-tile comfort-tile"><input type="radio" name="comfort" value="veryCold" required /><span class="option-emoji">🥶</span><span>Molto freddo</span></label>
+              <label class="option-tile comfort-tile"><input type="radio" name="comfort" value="cold" /><span class="option-emoji">😬</span><span>Freddo</span></label>
+              <label class="option-tile comfort-tile"><input type="radio" name="comfort" value="ok" /><span class="option-emoji">😌</span><span>Perfetto</span></label>
+              <label class="option-tile comfort-tile"><input type="radio" name="comfort" value="hot" /><span class="option-emoji">🙂‍↕️</span><span>Caldo</span></label>
+              <label class="option-tile comfort-tile"><input type="radio" name="comfort" value="veryHot" /><span class="option-emoji">🥵</span><span>Molto caldo</span></label>
             </div>
           </fieldset>
 
           <button class="primary-button" type="submit">Segnatelo, Me!teo</button>
+          <p class="feedback-toast" id="feedbackToast" role="status" aria-live="polite"></p>
           <p class="note" id="learningNote">Non ti conosco ancora: parto neutro.</p>
         </form>
       </section>
