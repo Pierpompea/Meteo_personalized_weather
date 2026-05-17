@@ -31,9 +31,8 @@ I dati meteo arrivano da Open-Meteo e non richiedono una chiave API.
 
 Questa app e pronta come PWA installabile.
 
-1. Pubblica la cartella su Netlify, Vercel o GitHub Pages.
-2. Apri il link dal telefono.
-3. Su Android, usa Chrome e scegli `Installa app` o `Aggiungi a schermata Home`.
-4. Su iPhone, usa Safari, apri il menu di condivisione e scegli `Aggiungi alla schermata Home`.
+1. Apri il link dal telefono.
+2. Su Android, usa Chrome e scegli `Installa app` o `Aggiungi a schermata Home`.
+3. Su iPhone, usa Safari, apri il menu di condivisione e scegli `Aggiungi alla schermata Home`.
 
 Le preferenze personali restano salvate sul telefono finche non cancelli i dati del sito o del browser.
