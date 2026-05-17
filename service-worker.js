@@ -1,10 +1,11 @@
-const CACHE_NAME = "meteo-su-misura-v4";
+const CACHE_NAME = "meteo-su-misura-v5";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
   "./manifest.json",
+  "./favicon.ico",
   "./icons/icon-180.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
