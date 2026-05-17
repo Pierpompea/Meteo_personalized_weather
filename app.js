@@ -32,6 +32,8 @@ const state = {
   profile: loadProfile(),
 };
 
+const WEATHER_THEME_CLASSES = ["weather-sunny", "weather-rainy", "weather-cloudy"];
+
 const els = {
   actualTemp: document.querySelector("#actualTemp"),
   personalTemp: document.querySelector("#personalTemp"),
@@ -99,10 +101,22 @@ function calculateProfileTemp() {
   return rounded(state.weather.apparentTemperature + state.profile.bias);
 }
 
+function getWeatherTheme(weatherCode) {
+  if ([51, 53, 55, 61, 63, 65, 80, 81, 82, 95].includes(weatherCode)) return "weather-rainy";
+  if ([2, 3, 45, 48].includes(weatherCode)) return "weather-cloudy";
+  return "weather-sunny";
+}
+
+function applyWeatherTheme() {
+  if (!state.weather) return;
+  document.body.classList.remove(...WEATHER_THEME_CLASSES);
+  document.body.classList.add(getWeatherTheme(state.weather.weatherCode));
+}
+
 function buildOutfitRecommendation() {
   if (!state.weather) {
     return {
-      title: "Appena arriva il meteo ti preparo un consiglio sensato.",
+      title: "Appena capisco che aria tira, ti dico cosa metterei.",
       items: [],
     };
   }
@@ -118,22 +132,22 @@ function buildOutfitRecommendation() {
   let items;
 
   if (profileTemp <= 4) {
-    title = "Copriti bene, oggi non fa sconti.";
+    title = "Copriti bene: oggi fuori fa il serio.";
     items = ["cappotto caldo", "maglione o pile", "sciarpa", "scarpe chiuse"];
   } else if (profileTemp <= 10) {
-    title = "Vai di strati: caldo quando serve, libertà quando entri.";
+    title = "Strati furbi: fuori caldo addosso, dentro libertà.";
     items = ["giacca pesante", "maglione", "pantaloni lunghi", "calze calde"];
   } else if (profileTemp <= 16) {
-    title = "Serve una via di mezzo furba.";
+    title = "Serve una via di mezzo: niente eroismi.";
     items = ["giacca leggera", "felpa o cardigan", "pantaloni lunghi", "strato facile da togliere"];
   } else if (profileTemp <= 22) {
-    title = "Si sta abbastanza bene: vestiti leggero, ma non troppo.";
+    title = "Si sta bene, ma portati un piano B leggero.";
     items = ["t-shirt o camicia", "giacca leggera a portata", "pantaloni comodi"];
   } else if (profileTemp <= 28) {
-    title = "Oggi punta sul fresco.";
+    title = "Oggi andrei sul fresco e comodo.";
     items = ["t-shirt", "tessuti leggeri", "pantaloni leggeri o gonna", "occhiali da sole se esci a lungo"];
   } else {
-    title = "Fa caldo sul serio: meno strati, più respiro.";
+    title = "Fa caldo davvero: lascia respirare tutto.";
     items = ["tessuti traspiranti", "pantaloncini o abiti leggeri", "cappello se stai al sole", "acqua con te"];
   }
 
@@ -169,19 +183,20 @@ function renderWeather() {
   els.humidityValue.textContent = `${state.weather.humidity}%`;
   els.apparentValue.textContent = `${rounded(state.weather.apparentTemperature)} °C`;
   els.locationName.textContent = state.coords.name;
-  els.weatherSummary.textContent = `${WEATHER_CODES[state.weather.weatherCode] || "Meteo variabile"} adesso, aggiornato alle ${new Date(
+  els.weatherSummary.textContent = `${WEATHER_CODES[state.weather.weatherCode] || "Meteo ballerino"} adesso, aggiornato alle ${new Date(
     state.weather.time,
   ).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}.`;
 
   const difference = rounded(profileTemp - state.weather.temperature);
   const phrase =
     difference > 1
-      ? `Per te oggi potrebbe sembrare circa ${difference} °C più caldo. Ne tengo conto nel consiglio.`
+      ? `Secondo il tuo corpo, oggi potrebbe sembrare circa ${difference} °C più caldo. Io mi regolo su quello.`
       : difference < -1
-        ? `Per te oggi potrebbe sembrare circa ${Math.abs(difference)} °C più freddo. Meglio non fidarsi solo del numero.`
-        : "Per te oggi il numero e la sensazione dovrebbero andare abbastanza d'accordo.";
+        ? `Secondo il tuo corpo, oggi potrebbe sembrare circa ${Math.abs(difference)} °C più freddo. Non facciamoci fregare dal numero.`
+        : "Oggi numero e sensazione dovrebbero parlarsi abbastanza bene.";
   els.personalSummary.textContent = phrase;
 
+  applyWeatherTheme();
   renderOutfitRecommendation();
   renderProfile();
 }
@@ -192,12 +207,12 @@ function renderProfile() {
   els.biasMeter.style.left = `${meterPosition}%`;
 
   if (state.profile.feedbackCount === 0) {
-    els.profileText.textContent = "Ti conosco ancora poco: ogni feedback mi aiuta a consigliarti meglio.";
+    els.profileText.textContent = "Ti conosco ancora poco: raccontami due uscite e divento piu sveglio.";
     els.learningNote.textContent = "Non ti conosco ancora: parto neutro.";
   } else {
     const tendency = bias > 0.4 ? "di solito senti più freddo degli altri" : bias < -0.4 ? "di solito senti più caldo degli altri" : "sei abbastanza allineato al meteo";
-    els.profileText.textContent = `Dopo ${state.profile.feedbackCount} feedback, ${tendency}. Io aggiusto il consiglio di ${bias > 0 ? "+" : ""}${bias} °C.`;
-    els.learningNote.textContent = `Perfetto, me lo segno: correzione personale ${bias > 0 ? "+" : ""}${bias} °C.`;
+    els.profileText.textContent = `Dopo ${state.profile.feedbackCount} feedback, ${tendency}. Io correggo i consigli di ${bias > 0 ? "+" : ""}${bias} °C.`;
+    els.learningNote.textContent = `Ricevuto: la prossima volta ragiono con ${bias > 0 ? "+" : ""}${bias} °C di esperienza in piu.`;
   }
 
   els.historyList.innerHTML = "";
@@ -218,7 +233,7 @@ function renderProfile() {
 }
 
 async function fetchWeather(coords = state.coords) {
-  els.weatherSummary.textContent = "Sto guardando fuori per te...";
+  els.weatherSummary.textContent = "Sto sbirciando fuori per te...";
   const params = new URLSearchParams({
     latitude: coords.latitude,
     longitude: coords.longitude,
@@ -250,10 +265,10 @@ function updateCoordsFromPosition(position) {
 }
 
 function showWeatherError(error) {
-  els.weatherSummary.textContent = `${error.message}. Intanto uso Roma come punto di partenza.`;
+  els.weatherSummary.textContent = `${error.message}. Per non lasciarti al buio, parto da Roma.`;
   state.coords = DEFAULT_COORDS;
   fetchWeather(DEFAULT_COORDS).catch(() => {
-    els.weatherSummary.textContent = "Non riesco a parlare col servizio meteo. Riprova tra poco.";
+    els.weatherSummary.textContent = "Il meteo non mi risponde. Riprova tra poco, magari si scioglie.";
   });
 }
 
@@ -308,6 +323,15 @@ els.resetBtn.addEventListener("click", () => {
 
 renderProfile();
 fetchWeather(DEFAULT_COORDS).catch(showWeatherError);
+
+const wardrobeObserver = new IntersectionObserver(
+  ([entry]) => {
+    document.body.classList.toggle("wardrobe-active", entry.isIntersecting);
+  },
+  { threshold: 0.35 },
+);
+
+wardrobeObserver.observe(els.feedbackForm);
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {

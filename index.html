@@ -3,23 +3,31 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0f8b8d" />
-    <meta name="description" content="Meteo personale con consigli su cosa indossare." />
+    <meta name="theme-color" content="#6fbaf8" />
+    <meta name="description" content="Me!teo, il meteo personale che ti consiglia cosa indossare." />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="Meteo su misura" />
+    <meta name="apple-mobile-web-app-title" content="Me!teo" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <title>Meteo su misura</title>
+    <title>Me!teo</title>
     <link rel="manifest" href="manifest.json" />
     <link rel="apple-touch-icon" href="icons/icon-192.png" />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
+  <body class="weather-sunny">
+    <div class="weather-scene" aria-hidden="true">
+      <div class="sun-reflection"></div>
+      <div class="cloud cloud-one"></div>
+      <div class="cloud cloud-two"></div>
+      <div class="cloud cloud-three"></div>
+      <div class="rain-drops"></div>
+    </div>
+
     <main class="app-shell">
       <section class="weather-panel" aria-labelledby="app-title">
         <div class="topbar">
           <div>
-            <p class="eyebrow">Meteo personale</p>
-            <h1 id="app-title">Usciamo vestiti giusti.</h1>
+            <p class="eyebrow">Me!teo</p>
+            <h1 id="app-title">Allora, come ci vestiamo?</h1>
           </div>
           <button class="icon-button" id="refreshBtn" type="button" aria-label="Aggiorna meteo" title="Aggiorna">
             <span aria-hidden="true">↻</span>
@@ -28,7 +36,7 @@
 
         <div class="location-row">
           <div>
-            <span class="muted">Dove guardiamo il cielo</span>
+            <span class="muted">Dove buttiamo un occhio</span>
             <strong id="locationName">Rilevamento...</strong>
           </div>
           <button id="geoBtn" class="secondary-button" type="button">Sono qui</button>
@@ -36,13 +44,13 @@
 
         <div class="temperature-grid">
           <article class="temperature-main">
-            <span class="muted">Fuori ci sono</span>
+            <span class="muted">Fuori siamo a</span>
             <div class="temp-value"><span id="actualTemp">--</span><small>°C</small></div>
             <p id="weatherSummary">Un attimo, guardo che tempo fa.</p>
           </article>
 
           <article class="temperature-personal">
-            <span class="muted">Per come sei fatto tu</span>
+            <span class="muted">Ma per te sembra</span>
             <div class="temp-value personal"><span id="personalTemp">--</span><small>°C</small></div>
             <p id="personalSummary">Qui tengo conto di quello che mi hai raccontato.</p>
           </article>
@@ -50,9 +58,9 @@
 
         <section class="outfit-card" aria-labelledby="outfitTitle">
           <div>
-            <p class="eyebrow">Consiglio vestiti</p>
-            <h2 id="outfitTitle">Oggi ti direi...</h2>
-            <p id="outfitSummary">Appena arriva il meteo ti preparo un consiglio sensato.</p>
+            <p class="eyebrow">Consiglio al volo</p>
+            <h2 id="outfitTitle">Io uscirei così...</h2>
+            <p id="outfitSummary">Appena capisco che aria tira, ti dico cosa metterei.</p>
           </div>
           <ul class="outfit-list" id="outfitList"></ul>
         </section>
@@ -74,7 +82,7 @@
 
         <form class="feedback-card" id="feedbackForm">
           <fieldset>
-            <legend>Dimmi com'eri vestito oggi</legend>
+            <legend>Guardaroba: com'eri vestito?</legend>
             <div class="clothing-grid" id="clothingChoices">
               <label><input type="checkbox" name="clothing" value="tshirt" data-weight="-1.5" /> T-shirt</label>
               <label><input type="checkbox" name="clothing" value="sweater" data-weight="1.5" /> Maglione</label>
@@ -94,7 +102,7 @@
             </div>
           </fieldset>
 
-          <button class="primary-button" type="submit">Ok, ricordalo per la prossima volta</button>
+          <button class="primary-button" type="submit">Segnatelo, Me!teo</button>
           <p class="note" id="learningNote">Non ti conosco ancora: parto neutro.</p>
         </form>
       </section>

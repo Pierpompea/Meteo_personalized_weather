@@ -1,14 +1,14 @@
 {
-  "name": "Meteo su misura",
-  "short_name": "Meteo",
-  "description": "Meteo personale con consigli su cosa indossare in base alla tua percezione.",
+  "name": "Me!teo",
+  "short_name": "Me!teo",
+  "description": "Il meteo personale che ti consiglia cosa indossare in base alla tua percezione.",
   "lang": "it",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f4f7f4",
-  "theme_color": "#0f8b8d",
+  "theme_color": "#6fbaf8",
   "icons": [
     {
       "src": "icons/icon-192.png",
