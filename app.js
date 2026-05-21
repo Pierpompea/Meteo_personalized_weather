@@ -33,6 +33,15 @@ const state = {
 };
 
 const WEATHER_THEME_CLASSES = ["weather-sunny", "weather-rainy", "weather-cloudy"];
+const PROFILE_DEFAULTS = { bias: 0, feedbackCount: 0, history: [], bucketBiases: {} };
+const TEMP_BUCKETS = [
+  { id: "freezing", max: 5 },
+  { id: "cold", max: 12 },
+  { id: "cool", max: 18 },
+  { id: "mild", max: 24 },
+  { id: "warm", max: 30 },
+  { id: "hot", max: Infinity },
+];
 
 const els = {
   actualTemp: document.querySelector("#actualTemp"),
@@ -58,20 +67,27 @@ const els = {
 };
 
 function loadProfile() {
-  const fallback = { bias: 0, feedbackCount: 0, history: [] };
   try {
     const saved = JSON.parse(localStorage.getItem("personalWeatherProfile"));
-    return {
-      ...fallback,
-      ...saved,
-      history: Array.isArray(saved?.history) ? saved.history : [],
-    };
+    return normalizeProfile(saved);
   } catch {
-    return fallback;
+    return normalizeProfile();
   }
 }
 
+function normalizeProfile(profile = {}) {
+  return {
+    ...PROFILE_DEFAULTS,
+    ...profile,
+    bias: Number.isFinite(profile.bias) ? profile.bias : PROFILE_DEFAULTS.bias,
+    feedbackCount: Number.isFinite(profile.feedbackCount) ? profile.feedbackCount : PROFILE_DEFAULTS.feedbackCount,
+    history: Array.isArray(profile.history) ? profile.history : [],
+    bucketBiases: profile.bucketBiases && typeof profile.bucketBiases === "object" ? profile.bucketBiases : {},
+  };
+}
+
 function saveProfile() {
+  state.profile = normalizeProfile(state.profile);
   localStorage.setItem("personalWeatherProfile", JSON.stringify(state.profile));
 }
 
@@ -109,6 +125,19 @@ function saveCoords(coords) {
 
 function rounded(value) {
   return Math.round(value * 10) / 10;
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function getTemperatureBucket(temperature) {
+  return TEMP_BUCKETS.find((bucket) => temperature <= bucket.max)?.id || "mild";
+}
+
+function getBucketBias(temperature) {
+  const bucket = getTemperatureBucket(temperature);
+  return Number(state.profile.bucketBiases?.[bucket]) || 0;
 }
 
 function uniqueParts(parts) {
@@ -208,16 +237,20 @@ function clothingAdjustment(items) {
   return items.reduce((sum, item) => sum + item.weight, 0) * 0.35;
 }
 
+function clothingWarmth(items) {
+  return items.reduce((sum, item) => sum + item.weight, 0);
+}
+
 function calculatePersonalTemp() {
   if (!state.weather) return null;
   const clothes = getSelectedClothing();
-  const adjusted = state.weather.apparentTemperature + state.profile.bias + clothingAdjustment(clothes);
+  const adjusted = state.weather.apparentTemperature + state.profile.bias + getBucketBias(state.weather.apparentTemperature) + clothingAdjustment(clothes);
   return rounded(adjusted);
 }
 
 function calculateProfileTemp() {
   if (!state.weather) return null;
-  return rounded(state.weather.apparentTemperature + state.profile.bias);
+  return rounded(state.weather.apparentTemperature + state.profile.bias + getBucketBias(state.weather.apparentTemperature));
 }
 
 function getWeatherTheme(weatherCode) {
@@ -293,14 +326,50 @@ function renderOutfitRecommendation() {
 
 function getComfortMeta(comfort) {
   const comfortMap = {
-    veryCold: { label: "molto freddo", step: 1, toast: "Ok, messaggio ricevuto: la prossima volta ti copro un po' di piu." },
-    cold: { label: "freddo", step: 0.6, toast: "Me lo segno: per te oggi serviva uno strato in piu." },
-    ok: { label: "perfetto", step: state.profile.bias * -0.12, toast: "Perfetto, questo outfit era centrato. Lo tengo come riferimento." },
-    hot: { label: "caldo", step: -0.6, toast: "Capito: la prossima volta ti alleggerisco un po' il consiglio." },
-    veryHot: { label: "molto caldo", step: -1, toast: "Ricevuto forte e chiaro: oggi eri troppo coperto." },
+    veryCold: { label: "molto freddo", score: 1.2, toast: "Ok, messaggio ricevuto: la prossima volta ti copro un po' di piu." },
+    cold: { label: "freddo", score: 0.7, toast: "Me lo segno: per te oggi serviva uno strato in piu." },
+    ok: { label: "perfetto", score: 0, toast: "Perfetto, questo outfit era centrato. Lo tengo come riferimento." },
+    hot: { label: "caldo", score: -0.7, toast: "Capito: la prossima volta ti alleggerisco un po' il consiglio." },
+    veryHot: { label: "molto caldo", score: -1.2, toast: "Ricevuto forte e chiaro: oggi eri troppo coperto." },
   };
 
   return comfortMap[comfort] || comfortMap.ok;
+}
+
+function getEnvironmentMultiplier(score, apparentTemperature) {
+  if (score > 0 && apparentTemperature <= 6) return 0.7;
+  if (score < 0 && apparentTemperature >= 29) return 0.7;
+  if (score > 0 && apparentTemperature >= 18) return 1.15;
+  if (score < 0 && apparentTemperature <= 16) return 1.15;
+  return 1;
+}
+
+function getClothingMultiplier(score, clothes) {
+  const warmth = clothingWarmth(clothes);
+  if (score > 0 && warmth >= 3) return 1.25;
+  if (score > 0 && warmth <= -1) return 0.72;
+  if (score < 0 && warmth <= -1) return 1.25;
+  if (score < 0 && warmth >= 3) return 0.72;
+  return 1;
+}
+
+function applyFeedbackLearning(comfortMeta, clothes) {
+  const bucket = getTemperatureBucket(state.weather.apparentTemperature);
+
+  if (comfortMeta.score === 0) {
+    state.profile.bias = rounded(state.profile.bias * 0.9);
+    state.profile.bucketBiases[bucket] = rounded((Number(state.profile.bucketBiases[bucket]) || 0) * 0.82);
+    return 0;
+  }
+
+  const environmentMultiplier = getEnvironmentMultiplier(comfortMeta.score, state.weather.apparentTemperature);
+  const clothingMultiplier = getClothingMultiplier(comfortMeta.score, clothes);
+  const learningStep = rounded(comfortMeta.score * environmentMultiplier * clothingMultiplier);
+
+  state.profile.bias = rounded(clamp(state.profile.bias + learningStep * 0.42, -4, 4));
+  state.profile.bucketBiases[bucket] = rounded(clamp((Number(state.profile.bucketBiases[bucket]) || 0) + learningStep * 0.5, -3, 3));
+
+  return learningStep;
 }
 
 function renderWeather() {
@@ -333,7 +402,8 @@ function renderWeather() {
 }
 
 function renderProfile() {
-  const bias = rounded(state.profile.bias);
+  const currentBucketBias = state.weather ? getBucketBias(state.weather.apparentTemperature) : 0;
+  const bias = rounded(state.profile.bias + currentBucketBias);
   const meterPosition = Math.max(5, Math.min(95, 50 + bias * 8));
   els.biasMeter.style.left = `${meterPosition}%`;
 
@@ -342,7 +412,7 @@ function renderProfile() {
     els.learningNote.textContent = "Non ti conosco ancora: parto neutro.";
   } else {
     const tendency = bias > 0.4 ? "di solito senti più freddo degli altri" : bias < -0.4 ? "di solito senti più caldo degli altri" : "sei abbastanza allineato al meteo";
-    els.profileText.textContent = `Dopo ${state.profile.feedbackCount} feedback, ${tendency}. Io correggo i consigli di ${bias > 0 ? "+" : ""}${bias} °C.`;
+    els.profileText.textContent = `Dopo ${state.profile.feedbackCount} feedback, ${tendency}. In questa fascia meteo correggo i consigli di ${bias > 0 ? "+" : ""}${bias} °C.`;
     els.learningNote.textContent = `Ricevuto: la prossima volta ragiono con ${bias > 0 ? "+" : ""}${bias} °C di esperienza in piu.`;
   }
 
@@ -414,15 +484,16 @@ function handleFeedback(event) {
   const comfort = formData.get("comfort");
   const clothes = getSelectedClothing();
   const comfortMeta = getComfortMeta(comfort);
-  const learningStep = comfortMeta.step;
+  const learningStep = applyFeedbackLearning(comfortMeta, clothes);
 
-  state.profile.bias = rounded(Math.max(-4, Math.min(4, state.profile.bias + learningStep)));
   state.profile.feedbackCount += 1;
   state.profile.history.unshift({
     actual: rounded(state.weather.temperature),
     personal: calculatePersonalTemp(),
     comfortLabel: comfortMeta.label,
     clothes: clothes.map((item) => item.label).join(", "),
+    bucket: getTemperatureBucket(state.weather.apparentTemperature),
+    learningStep,
     date: new Date().toISOString(),
   });
   state.profile.history = state.profile.history.slice(0, 12);
@@ -452,7 +523,7 @@ els.refreshBtn.addEventListener("click", () => fetchWeather().catch(showWeatherE
 els.feedbackForm.addEventListener("change", renderWeather);
 els.feedbackForm.addEventListener("submit", handleFeedback);
 els.resetBtn.addEventListener("click", () => {
-  state.profile = { bias: 0, feedbackCount: 0, history: [] };
+  state.profile = normalizeProfile();
   saveProfile();
   renderProfile();
   renderWeather();

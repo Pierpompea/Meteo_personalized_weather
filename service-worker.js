@@ -1,4 +1,4 @@
-const CACHE_NAME = "meteo-su-misura-v5";
+const CACHE_NAME = "meteo-su-misura-v7";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -6,6 +6,9 @@ const APP_SHELL = [
   "./app.js",
   "./manifest.json",
   "./favicon.ico",
+  "./apple-touch-icon.png",
+  "./android-chrome-192x192.png",
+  "./android-chrome-512x512.png",
   "./icons/icon-180.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
