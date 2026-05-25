@@ -26,12 +26,6 @@ const WEATHER_CODES = {
   95: "Temporale",
 };
 
-const state = {
-  weather: null,
-  coords: loadSavedCoords(),
-  profile: loadProfile(),
-};
-
 const WEATHER_THEME_CLASSES = ["weather-sunny", "weather-rainy", "weather-cloudy"];
 const PROFILE_DEFAULTS = { bias: 0, feedbackCount: 0, history: [], bucketBiases: {} };
 const TEMP_BUCKETS = [
@@ -42,6 +36,12 @@ const TEMP_BUCKETS = [
   { id: "warm", max: 30 },
   { id: "hot", max: Infinity },
 ];
+
+const state = {
+  weather: null,
+  coords: loadSavedCoords(),
+  profile: loadProfile(),
+};
 
 const els = {
   actualTemp: document.querySelector("#actualTemp"),
