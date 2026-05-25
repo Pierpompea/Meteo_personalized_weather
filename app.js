@@ -189,7 +189,7 @@ async function enrichLocationName(coords, { save = false } = {}) {
       "accept-language": "it",
     });
     const response = await fetch(`https://nominatim.openstreetmap.org/reverse?${params}`);
-    if (!response.ok) return;
+    if (!response.ok) throw new Error("Reverse geocoding unavailable");
 
     const data = await response.json();
     const accuracy = formatAccuracy(coords.accuracy);
@@ -505,17 +505,32 @@ function handleFeedback(event) {
 
 function requestGeolocation() {
   if (!navigator.geolocation) {
-    els.locationName.textContent = DEFAULT_COORDS.name;
-    fetchWeather(DEFAULT_COORDS).catch(showWeatherError);
+    els.locationName.textContent = "Il browser non mi lascia leggere il GPS. Uso l'ultima posizione salvata.";
+    fetchWeather(state.coords).catch(showWeatherError);
     return;
   }
 
   els.locationName.textContent = "Cerco dove sei...";
-  navigator.geolocation.getCurrentPosition(updateCoordsFromPosition, () => {
-    state.coords = DEFAULT_COORDS;
-    els.locationName.textContent = DEFAULT_COORDS.name;
-    fetchWeather(DEFAULT_COORDS).catch(showWeatherError);
-  });
+  navigator.geolocation.getCurrentPosition(
+    updateCoordsFromPosition,
+    (error) => {
+      const savedCoords = loadSavedCoords();
+      state.coords = savedCoords;
+      const reason =
+        error.code === error.PERMISSION_DENIED
+          ? "Non ho il permesso per il GPS"
+          : error.code === error.TIMEOUT
+            ? "Il GPS ci sta mettendo troppo"
+            : "Non riesco a leggere la posizione";
+      els.locationName.textContent = `${reason}. Uso l'ultima posizione salvata.`;
+      fetchWeather(savedCoords).catch(showWeatherError);
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 12000,
+      maximumAge: 300000,
+    },
+  );
 }
 
 els.geoBtn.addEventListener("click", requestGeolocation);
